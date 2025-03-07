@@ -29,7 +29,7 @@
         
         canvas {
             border: 2px solid black;
-            margin: 20px auto;
+            margin: 10px auto;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             display: block;
@@ -37,7 +37,7 @@
         }
         
         .controls {
-            margin: 10px auto 20px;
+            margin: 10px auto 15px;
             padding: 15px;
             background-color: #fff;
             border-radius: 8px;
@@ -88,6 +88,24 @@
             color: #7f8c8d;
             margin: 20px 0;
             line-height: 1.4;
+        }
+        
+        .game-header {
+            font-size: 16px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .game-credits {
+            font-size: 10px;
+            color: #7f8c8d;
+            margin: 0 0 5px 0;
+            line-height: 1.2;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
         }
         
         .intro-image {
@@ -191,7 +209,7 @@
         .game-instructions {
             font-size: 12px;
             color: #777;
-            margin-top: 20px;
+            margin-top: 15px;
             padding: 10px;
             background-color: #f9f9f9;
             border-radius: 5px;
@@ -285,7 +303,11 @@
     </div>
 
     <div class="gameScreen hidden" id="gameScreen">
-        <h1>Simulatore di Occhiali - Nicolosi Salvatore Antonino</h1>
+        <h2 class="game-header">Simulatore di Occhiali - Nicolosi Salvatore Antonino</h2>
+        <div class="game-credits">
+            PNRR – LA SCUOLA FUTURA "STEM e Multilinguismo a scuola: learning by doing" Laboratorio co-curricolare "Pensiero Computazionale per Creare e Apprendere"<br>
+            Tutor: <strong>Prof.ssa Russo Simona</strong> Docente Esperto Formatore: <strong>Ing. Azzarelli Giampiero</strong>
+        </div>
         
         <div class="canvas-container">
             <canvas id="simCanvas" width="500" height="300"></canvas>
