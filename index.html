@@ -289,6 +289,7 @@
         
         <div class="canvas-container">
             <canvas id="simCanvas" width="500" height="300"></canvas>
+            <canvas id="offscreenCanvas" width="500" height="300" style="display:none;"></canvas>
         </div>
         
         <div class="controls">
@@ -324,12 +325,77 @@
     <script>
         const canvas = document.getElementById("simCanvas");
         const ctx = canvas.getContext("2d");
+        
+        // Canvas nascosto per l'elaborazione
+        const offscreenCanvas = document.getElementById("offscreenCanvas");
+        const offscreenCtx = offscreenCanvas.getContext("2d");
+        
         const img = new Image();
         img.src = "img/immagine-ottica.png"; // Immagine specificata
 
         const blurInput = document.getElementById("blur");
         const blurValueLabel = document.getElementById("blurValue");
         const tintInput = document.getElementById("tint");
+        
+        // Array di kernel per diverse intensità di sfocatura
+        const kernels = {
+            // Implementazione manuale del filtro di sfocatura (box blur)
+            createKernel: function(size) {
+                const kernel = [];
+                const side = Math.floor(size);
+                const total = side * side;
+                
+                for (let i = 0; i < side; i++) {
+                    kernel[i] = [];
+                    for (let j = 0; j < side; j++) {
+                        kernel[i][j] = 1 / total;
+                    }
+                }
+                
+                return kernel;
+            },
+            
+            // Applica il kernel ai pixel dell'immagine
+            applyKernel: function(pixels, kernel, width, height) {
+                const side = kernel.length;
+                const halfSide = Math.floor(side / 2);
+                const output = new ImageData(width, height);
+                const outputData = output.data;
+                
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        let r = 0, g = 0, b = 0, a = 0;
+                        
+                        // Applica il kernel
+                        for (let ky = 0; ky < side; ky++) {
+                            for (let kx = 0; kx < side; kx++) {
+                                const px = x + kx - halfSide;
+                                const py = y + ky - halfSide;
+                                
+                                // Gestisci i bordi
+                                if (px >= 0 && px < width && py >= 0 && py < height) {
+                                    const i = (py * width + px) * 4;
+                                    const weight = kernel[ky][kx];
+                                    
+                                    r += pixels.data[i] * weight;
+                                    g += pixels.data[i + 1] * weight;
+                                    b += pixels.data[i + 2] * weight;
+                                    a += pixels.data[i + 3] * weight;
+                                }
+                            }
+                        }
+                        
+                        const i = (y * width + x) * 4;
+                        outputData[i] = r;
+                        outputData[i + 1] = g;
+                        outputData[i + 2] = b;
+                        outputData[i + 3] = a;
+                    }
+                }
+                
+                return output;
+            }
+        };
 
         // Assicurati che l'immagine sia caricata correttamente
         img.onload = function() {
@@ -337,25 +403,44 @@
         };
 
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // Pulisce il canvas prima di ogni disegno
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // Disegna l'immagine
+            // Pulisce entrambi i canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+            
+            // Disegna l'immagine originale sul canvas fuori schermo
+            offscreenCtx.drawImage(img, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+            
+            // Applica gli effetti
             applyEffects();
         }
 
         function applyEffects() {
-            let blurValue = document.getElementById("blur").value;
+            // Ottieni i valori dei controlli
+            let blurValue = parseFloat(document.getElementById("blur").value);
             let tintColor = document.getElementById("tint").value;
-
-            // Applica la sfocatura
-            ctx.filter = `blur(${blurValue}px)`;
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // Ridisegna l'immagine con la sfocatura
-
-            // Rimuove la sfocatura per il filtro di colore
-            ctx.filter = 'none'; 
+            
+            // Scala di conversione da diottrie a dimensione del blur
+            // Questa scala può essere regolata in base alle esigenze
+            let blurSize = Math.min(Math.max(Math.ceil(blurValue * 1.5), 1), 50);
+            
+            if (blurValue === 0) {
+                // Se non c'è sfocatura, copia semplicemente l'immagine
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            } else {
+                // Ottieni i dati dell'immagine
+                const imgData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+                
+                // Crea e applica un kernel di sfocatura appropriato
+                const kernel = kernels.createKernel(blurSize);
+                const blurredData = kernels.applyKernel(imgData, kernel, offscreenCanvas.width, offscreenCanvas.height);
+                
+                // Disegna l'immagine sfocata
+                ctx.putImageData(blurredData, 0, 0);
+            }
 
             // Applica il filtro colore (tint)
-            ctx.fillStyle = tintColor + "55"; // 55 aggiunge trasparenza
-            ctx.fillRect(0, 0, canvas.width, canvas.height); // Applica un rettangolo semi-trasparente sopra l'immagine
+            ctx.fillStyle = tintColor + "55"; // 55 aggiunge trasparenza (33% circa)
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
         // Funzione per aggiornare il valore della miopia (diottrie)
